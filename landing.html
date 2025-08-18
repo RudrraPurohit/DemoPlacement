@@ -1,0 +1,668 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Placement Trend Analyzer · Humanized Premium</title>
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Google Fonts: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+
+  <style>
+    :root {
+      color-scheme: dark;
+      --ring: 0 0% 100%;
+      --brand-1: 59 130 246;
+      /* blue-500 */
+      --brand-2: 168 85 247;
+      /* purple-500 */
+      --bg: #0f172a;
+      /* slate-900 */
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background:
+        radial-gradient(1200px 800px at 20% -10%, rgba(56, 189, 248, 0.14), transparent 60%),
+        radial-gradient(1000px 700px at 110% 10%, rgba(168, 85, 247, 0.15), transparent 60%),
+        var(--bg);
+      overflow-x: hidden;
+    }
+
+    /* ---------- Micro animations & effects ---------- */
+    @keyframes float {
+
+      0%,
+      100% {
+        transform: translateY(0)
+      }
+
+      50% {
+        transform: translateY(-8px)
+      }
+    }
+
+    .float-animate {
+      animation: float 7s ease-in-out infinite;
+    }
+
+    @keyframes scroll {
+      from {
+        transform: translateX(0)
+      }
+
+      to {
+        transform: translateX(-100%)
+      }
+    }
+
+    .animate-scroll {
+      animation: scroll 35s linear infinite;
+    }
+
+    .scroller:hover .animate-scroll {
+      animation-play-state: paused;
+    }
+
+    @keyframes pulseGlow {
+
+      0%,
+      100% {
+        box-shadow: 0 0 18px rgba(59, 130, 246, .45), 0 0 36px rgba(168, 85, 247, .35)
+      }
+
+      50% {
+        box-shadow: 0 0 28px rgba(59, 130, 246, .65), 0 0 56px rgba(168, 85, 247, .55)
+      }
+    }
+
+    .glow-pulse {
+      animation: pulseGlow 3s ease-in-out infinite;
+    }
+
+    .glass {
+      background: linear-gradient(to bottom right, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.03));
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      backdrop-filter: blur(12px);
+    }
+
+    .focus-ring:focus-visible {
+      outline: 2px solid hsl(var(--ring)/0.9);
+      outline-offset: 2px;
+    }
+
+    .card-hover {
+      transition: transform .3s ease, box-shadow .3s ease, border-color .3s ease;
+    }
+
+    .card-hover:hover {
+      transform: translateY(-4px) scale(1.015);
+      box-shadow: 0 20px 40px rgba(0, 0, 0, .45);
+      border-color: rgba(255, 255, 255, .12);
+    }
+
+    /* Parallax tilt (vanilla) */
+    .tilt {
+      transform-style: preserve-3d;
+      perspective: 1000px;
+    }
+
+    .tilt>.tilt-inner {
+      transform: translateZ(30px);
+    }
+
+    /* Tooltip */
+    .tooltip {
+      position: relative;
+    }
+
+    .tooltip:hover::after,
+    .tooltip:focus-visible::after {
+      content: attr(aria-label);
+      position: absolute;
+      bottom: calc(100% + 12px);
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(15, 23, 42, .96);
+      color: #e2e8f0;
+      font-size: 12px;
+      padding: 6px 10px;
+      border-radius: 8px;
+      white-space: nowrap;
+      box-shadow: 0 8px 30px rgba(0, 0, 0, .35);
+      pointer-events: none;
+      z-index: 50;
+    }
+
+    .tooltip:hover::before,
+    .tooltip:focus-visible::before {
+      content: "";
+      position: absolute;
+      bottom: 100%;
+      left: 50%;
+      transform: translateX(-50%);
+      border: 6px solid transparent;
+      border-top-color: rgba(15, 23, 42, .96);
+    }
+
+    /* Shimmer skeleton for future charts */
+    .skeleton {
+      position: relative;
+      overflow: hidden;
+      background: rgba(255, 255, 255, .06);
+    }
+
+    .skeleton::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      transform: translateX(-100%);
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, .12), transparent);
+      animation: loadShimmer 1.6s infinite;
+    }
+
+    @keyframes loadShimmer {
+      to {
+        transform: translateX(100%);
+      }
+    }
+
+    /* Reduce motion preference */
+    @media (prefers-reduced-motion: reduce) {
+
+      .animate-scroll,
+      .glow-pulse,
+      .float-animate {
+        animation: none !important;
+      }
+
+      .card-hover {
+        transition: none;
+      }
+    }
+
+    /* Gooey glow blobs */
+    .blob {
+      filter: url(#goo);
+      opacity: .8;
+    }
+  </style>
+</head>
+
+<body class="text-white antialiased selection:bg-blue-500/30 selection:text-white">
+
+  <!-- SVG filters for gooey effect -->
+  <svg class="absolute pointer-events-none" width="0" height="0" aria-hidden="true">
+    <filter id="goo">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="10" result="blur" />
+      <feColorMatrix in="blur" mode="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 18 -7" result="goo" />
+      <feBlend in="SourceGraphic" in2="goo" />
+    </filter>
+  </svg>
+
+  <!-- Top Navigation -->
+  <nav class="sticky top-0 z-50 border-b border-white/5 bg-slate-900/70 backdrop-blur-md">
+    <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="h-9 w-9 rounded-lg bg-gradient-to-br from-blue-500 to-purple-500 shadow-lg shadow-blue-900/40">
+        </div>
+        <span class="font-bold tracking-wide">Placement Trend Analyzer</span>
+        <span class="ml-2 text-xs text-slate-400 hidden sm:inline">humanized · AI-assisted</span>
+      </div>
+      <div class="hidden sm:flex items-center gap-6 text-slate-300">
+        <button
+          class="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-3 py-2 rounded-md text-sm font-medium shadow-lg">Dashboard</button>
+        <button id="analyticsLink" class="hover:text-white transition focus-ring">College Analytics</button>
+        <button class="hover:text-white transition focus-ring">Student Analyzer</button>
+        <button class="hover:text-white transition focus-ring">Company Trends</button>
+        <button class="hover:text-white transition focus-ring">AI Add-ons</button>
+      </div>
+      <div class="flex items-center gap-2">
+        <button id="themeToggle"
+          class="focus-ring px-3 py-2 rounded-md bg-white/5 hover:bg-white/10 border border-white/10 text-sm">Glow</button>
+        <button class="sm:hidden px-3 py-2 rounded-md bg-white/5 hover:bg-white/10 focus-ring">Menu</button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Main Content -->
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <!-- Header Section -->
+    <div class="mb-8">
+      <div class="flex justify-between items-center">
+        <div>
+          <h1 class="text-4xl font-extrabold text-white tracking-tight">Placement Trend Analyzer</h1>
+          <p class="text-slate-300 mt-1">Discover hiring trends and insights across top tech companies</p>
+        </div>
+        <button
+          class="focus-ring bg-white/5 hover:bg-white/10 text-white font-medium py-3 px-5 rounded-xl border border-white/10">
+          Get Started
+        </button>
+      </div>
+    </div>
+
+    <!-- Hero Content Section -->
+    <div class="glass rounded-2xl p-6 shadow-2xl card-hover mb-8">
+      <div class="grid md:grid-cols-2 gap-10 items-center">
+        <div>
+          <h2 class="text-3xl md:text-5xl font-extrabold leading-tight tracking-tight text-white">
+            Discover hiring trends across <span
+              class="bg-gradient-to-r from-blue-300 to-purple-400 bg-clip-text text-transparent">top tech</span>
+          </h2>
+          <p class="text-slate-300 mt-5 text-lg">Human-friendly insights from job posts, career pages, and live hiring
+            signals. Plan smarter, apply better.</p>
+          <div class="mt-8 flex items-center gap-4">
+            <button id="analyzeBtn"
+              class="glow-pulse bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white font-semibold py-3.5 px-7 rounded-xl shadow-lg shadow-blue-900/30 transition focus-ring">
+              🚀 Analyze Trends
+            </button>
+            <button
+              class="focus-ring bg-white/5 hover:bg-white/10 text-white font-medium py-3.5 px-6 rounded-xl border border-white/10">
+              Explore Companies
+            </button>
+          </div>
+          <p class="mt-4 text-xs text-slate-400">No signup required. Instant insights. Privacy-first.</p>
+        </div>
+
+        <!-- KPI teaser -->
+        <div class="grid grid-cols-3 gap-4">
+          <div class="glass rounded-xl p-4 text-center card-hover">
+            <div class="text-slate-300 text-[11px]">Companies</div>
+            <div class="text-2xl font-bold text-white mt-1">120+</div>
+            <div class="mt-2 text-[11px] text-emerald-300/80">+8 this week</div>
+          </div>
+          <div class="glass rounded-xl p-4 text-center card-hover">
+            <div class="text-slate-300 text-[11px]">Skills tracked</div>
+            <div class="text-2xl font-bold text-white mt-1">350+</div>
+            <div class="mt-2 text-[11px] text-emerald-300/80">+24 added</div>
+          </div>
+          <div class="glass rounded-xl p-4 text-center card-hover">
+            <div class="text-slate-300 text-[11px]">Updates/week</div>
+            <div class="text-2xl font-bold text-white mt-1">5,000+</div>
+            <div class="mt-2 text-[11px] text-emerald-300/80">Real-time</div>
+          </div>
+          <div class="col-span-3 glass rounded-xl p-5">
+            <p class="text-sm text-slate-300">Insights synthesized from job posts, career pages, and hiring signals to
+              surface real-time trends.</p>
+            <div class="mt-3 h-2 w-full bg-white/5 rounded-full overflow-hidden">
+              <div id="progressBar" class="h-full bg-gradient-to-r from-blue-500 to-purple-500 w-2/3"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Infinite Logo Scroller -->
+  <section class="relative w-full max-w-7xl mx-auto px-4 mt-6">
+    <!-- Faded edges -->
+    <div class="absolute inset-0 z-10 pointer-events-none">
+      <div class="absolute left-0 top-0 bottom-0 w-1/6 bg-gradient-to-r from-slate-900 to-transparent"></div>
+      <div class="absolute right-0 top-0 bottom-0 w-1/6 bg-gradient-to-l from-slate-900 to-transparent"></div>
+    </div>
+
+    <div class="relative flex overflow-hidden scroller rounded-2xl border border-white/5 bg-white/5 backdrop-blur">
+      <!-- Row 1 -->
+      <div class="flex-shrink-0 flex items-center justify-around min-w-full animate-scroll gap-10 py-6">
+        <img src="https://cdn.jsdelivr.net/npm/simple-icons@v11/icons/google.svg" alt="Google" aria-label="Google"
+          class="h-12 w-auto mx-4 opacity-80 hover:opacity-100 transition tooltip filter grayscale hover:grayscale-0" />
+        <img src="https://cdn.jsdelivr.net/npm/simple-icons@v11/icons/meta.svg" alt="Meta" aria-label="Meta"
+          class="h-12 w-auto mx-4 opacity-80 hover:opacity-100 transition tooltip filter grayscale hover:grayscale-0" />
+        <img src="https://cdn.jsdelivr.net/npm/simple-icons@v11/icons/amazon.svg" alt="Amazon" aria-label="Amazon"
+          class="h-12 w-auto mx-4 opacity-80 hover:opacity-100 transition tooltip filter grayscale hover:grayscale-0" />
+        <img src="https://cdn.jsdelivr.net/npm/simple-icons@v11/icons/apple.svg" alt="Apple" aria-label="Apple"
+          class="h-12 w-auto mx-4 opacity-80 hover:opacity-100 transition tooltip filter grayscale hover:grayscale-0" />
+        <img src="https://cdn.jsdelivr.net/npm/simple-icons@v11/icons/microsoft.svg" alt="Microsoft"
+          aria-label="Microsoft"
+          class="h-12 w-auto mx-4 opacity-80 hover:opacity-100 transition tooltip filter grayscale hover:grayscale-0" />
+        <img src="https://cdn.jsdelivr.net/npm/simple-icons@v11/icons/netflix.svg" alt="Netflix" aria-label="Netflix"
+          class="h-12 w-auto mx-4 opacity-80 hover:opacity-100 transition tooltip filter grayscale hover:grayscale-0" />
+        <img src="https://cdn.jsdelivr.net/npm/simple-icons@v11/icons/tesla.svg" alt="Tesla" aria-label="Tesla"
+          class="h-12 w-auto mx-4 opacity-80 hover:opacity-100 transition tooltip filter grayscale hover:grayscale-0" />
+        <img src="https://cdn.jsdelivr.net/npm/simple-icons@v11/icons/nvidia.svg" alt="Nvidia" aria-label="Nvidia"
+          class="h-12 w-auto mx-4 opacity-80 hover:opacity-100 transition tooltip filter grayscale hover:grayscale-0" />
+        <img src="https://cdn.jsdelivr.net/npm/simple-icons@v11/icons/adobe.svg" alt="Adobe" aria-label="Adobe"
+          class="h-12 w-auto mx-4 opacity-80 hover:opacity-100 transition tooltip filter grayscale hover:grayscale-0" />
+        <img src="https://cdn.jsdelivr.net/npm/simple-icons@v11/icons/oracle.svg" alt="Oracle" aria-label="Oracle"
+          class="h-12 w-auto mx-4 opacity-80 hover:opacity-100 transition tooltip filter grayscale hover:grayscale-0" />
+      </div>
+      <!-- Duplicate for seamless loop -->
+      <div class="flex-shrink-0 flex items-center justify-around min-w-full animate-scroll gap-10 py-6"
+        aria-hidden="true">
+        <img src="https://cdn.jsdelivr.net/npm/simple-icons@v11/icons/google.svg" alt="Google"
+          class="h-12 w-auto mx-4 opacity-80 hover:opacity-100 transition filter grayscale hover:grayscale-0" />
+        <img src="https://cdn.jsdelivr.net/npm/simple-icons@v11/icons/meta.svg" alt="Meta"
+          class="h-12 w-auto mx-4 opacity-80 hover:opacity-100 transition filter grayscale hover:grayscale-0" />
+        <img src="https://cdn.jsdelivr.net/npm/simple-icons@v11/icons/amazon.svg" alt="Amazon"
+          class="h-12 w-auto mx-4 opacity-80 hover:opacity-100 transition filter grayscale hover:grayscale-0" />
+        <img src="https://cdn.jsdelivr.net/npm/simple-icons@v11/icons/apple.svg" alt="Apple"
+          class="h-12 w-auto mx-4 opacity-80 hover:opacity-100 transition filter grayscale hover:grayscale-0" />
+        <img src="https://cdn.jsdelivr.net/npm/simple-icons@v11/icons/microsoft.svg" alt="Microsoft"
+          class="h-12 w-auto mx-4 opacity-80 hover:opacity-100 transition filter grayscale hover:grayscale-0" />
+        <img src="https://cdn.jsdelivr.net/npm/simple-icons@v11/icons/netflix.svg" alt="Netflix"
+          class="h-12 w-auto mx-4 opacity-80 hover:opacity-100 transition filter grayscale hover:grayscale-0" />
+        <img src="https://cdn.jsdelivr.net/npm/simple-icons@v11/icons/tesla.svg" alt="Tesla"
+          class="h-12 w-auto mx-4 opacity-80 hover:opacity-100 transition filter grayscale hover:grayscale-0" />
+        <img src="https://cdn.jsdelivr.net/npm/simple-icons@v11/icons/nvidia.svg" alt="Nvidia"
+          class="h-12 w-auto mx-4 opacity-80 hover:opacity-100 transition filter grayscale hover:grayscale-0" />
+        <img src="https://cdn.jsdelivr.net/npm/simple-icons@v11/icons/adobe.svg" alt="Adobe"
+          class="h-12 w-auto mx-4 opacity-80 hover:opacity-100 transition filter grayscale hover:grayscale-0" />
+        <img src="https://cdn.jsdelivr.net/npm/simple-icons@v11/icons/oracle.svg" alt="Oracle"
+          class="h-12 w-auto mx-4 opacity-80 hover:opacity-100 transition filter grayscale hover:grayscale-0" />
+      </div>
+    </div>
+
+    <!-- Controls -->
+    <div class="flex items-center justify-center gap-3 mt-3 text-slate-400">
+      <button id="pauseScroll"
+        class="focus-ring px-3 py-1.5 rounded-md bg-white/5 hover:bg-white/10 border border-white/10">Pause</button>
+      <button id="playScroll"
+        class="focus-ring px-3 py-1.5 rounded-md bg-white/5 hover:bg-white/10 border border-white/10">Play</button>
+      <button id="fasterScroll"
+        class="focus-ring px-3 py-1.5 rounded-md bg-white/5 hover:bg-white/10 border border-white/10">Faster</button>
+      <button id="slowerScroll"
+        class="focus-ring px-3 py-1.5 rounded-md bg-white/5 hover:bg-white/10 border border-white/10">Slower</button>
+    </div>
+  </section>
+
+  <!-- Skills Chips + mini analytics -->
+  <section class="max-w-7xl mx-auto px-4 mt-12">
+    <div class="glass rounded-2xl p-6 md:p-8">
+      <div class="flex items-center justify-between gap-4 flex-wrap">
+        <h2 class="text-xl md:text-2xl font-semibold">Explore by skill</h2>
+        <div class="flex gap-2 flex-wrap" id="skillChips" aria-label="Skill filters">
+          <button data-skill="Data Science"
+            class="skill-chip focus-ring px-3 py-1.5 rounded-full bg-blue-600/20 text-blue-300 border border-blue-500/30">Data
+            Science</button>
+          <button data-skill="Frontend"
+            class="skill-chip focus-ring px-3 py-1.5 rounded-full bg-purple-600/20 text-purple-300 border border-purple-500/30">Frontend</button>
+          <button data-skill="Cloud"
+            class="skill-chip focus-ring px-3 py-1.5 rounded-full bg-emerald-600/20 text-emerald-300 border border-emerald-500/30">Cloud</button>
+          <button data-skill="DevOps"
+            class="skill-chip focus-ring px-3 py-1.5 rounded-full bg-amber-600/20 text-amber-300 border border-amber-500/30">DevOps</button>
+          <button data-skill="AI/ML"
+            class="skill-chip focus-ring px-3 py-1.5 rounded-full bg-rose-600/20 text-rose-300 border border-rose-500/30">AI/ML</button>
+        </div>
+      </div>
+      <p class="mt-4 text-slate-300 text-sm">Select a category to see top-demand skills and companies driving hiring in
+        the last quarter.</p>
+
+      <!-- Mini analytics row -->
+      <div class="grid md:grid-cols-3 gap-4 mt-6">
+        <div class="glass rounded-xl p-4 card-hover">
+          <div class="text-xs text-slate-300">Top Rising Skill</div>
+          <div class="mt-1 text-lg font-semibold" id="risingSkill">—</div>
+          <div class="mt-3 h-24 rounded-md skeleton"></div>
+        </div>
+        <div class="glass rounded-xl p-4 card-hover">
+          <div class="text-xs text-slate-300">Average CTC (LPA) • est.</div>
+          <div class="mt-1 text-lg font-semibold" id="avgCtc">—</div>
+          <div class="mt-3 h-24 rounded-md skeleton"></div>
+        </div>
+        <div class="glass rounded-xl p-4 card-hover">
+          <div class="text-xs text-slate-300">Open Roles Momentum</div>
+          <div class="mt-1 text-lg font-semibold" id="momentum">—</div>
+          <div class="mt-3 h-24 rounded-md skeleton"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Friendly CTA / Guidance -->
+  <section class="max-w-7xl mx-auto px-4 mt-8">
+    <div class="glass rounded-2xl p-6 md:p-8 flex flex-col md:flex-row items-center gap-6">
+      <div class="flex-1">
+        <h3 class="text-lg md:text-xl font-semibold">Not sure where to start?</h3>
+        <p class="text-slate-300 mt-2 text-sm">Pick two skills you love, hit <span
+            class="text-white font-semibold">Analyze Trends</span>, and we’ll show you where demand is peaking—no
+          jargon, just actionable next steps.</p>
+      </div>
+      <div class="flex items-center gap-3">
+        <button id="quickStart"
+          class="focus-ring bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white font-medium py-3 px-5 rounded-xl shadow-lg">Quick
+          Start</button>
+        <button id="tourBtn"
+          class="focus-ring bg-white/5 hover:bg-white/10 text-white font-medium py-3 px-5 rounded-xl border border-white/10">Take
+          a 15s tour</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="max-w-7xl mx-auto px-4 mt-14 mb-10">
+    <div class="glass rounded-2xl p-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+      <p class="text-slate-400 text-sm">© <span id="year"></span> Placement Trend Analyzer • crafted for humans</p>
+      <div class="flex items-center gap-3 text-sm text-slate-300">
+        <button class="focus-ring hover:text-white">Privacy</button>
+        <span class="text-slate-600">•</span>
+        <button class="focus-ring hover:text-white">Terms</button>
+        <span class="text-slate-600">•</span>
+        <button class="focus-ring hover:text-white">Contact</button>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Toast -->
+  <div id="toast" role="status" aria-live="polite" class="fixed bottom-6 left-1/2 -translate-x-1/2 hidden z-50">
+    <div class="glass rounded-xl px-4 py-3 text-sm shadow-xl border border-white/10 flex items-center gap-2">
+      <span>✨ Setting things up… crunching the freshest roles and skills.</span>
+    </div>
+  </div>
+
+  <!-- Modal -->
+  <div id="modal" class="fixed inset-0 z-50 hidden">
+    <div class="absolute inset-0 bg-black/60 backdrop-blur-sm"></div>
+    <div class="relative max-w-xl mx-auto mt-24 p-0">
+      <div class="glass rounded-2xl overflow-hidden border border-white/10">
+        <div class="px-6 py-5 border-b border-white/10 flex items-center justify-between">
+          <h4 class="font-semibold">Trend Analysis</h4>
+          <button id="closeModal" class="focus-ring px-2 py-1 rounded-md bg-white/5 hover:bg-white/10">✕</button>
+        </div>
+        <div class="p-6">
+          <p class="text-slate-300 text-sm">We’ll personalize the dashboard based on your selected skills. This is a
+            demo—data below is placeholder.</p>
+          <div class="grid grid-cols-3 gap-3 mt-4">
+            <div class="glass rounded-lg p-3 text-center">
+              <div class="text-[11px] text-slate-400">Hot Roles</div>
+              <div class="text-lg font-semibold">SDE • Data Eng</div>
+            </div>
+            <div class="glass rounded-lg p-3 text-center">
+              <div class="text-[11px] text-slate-400">Locations</div>
+              <div class="text-lg font-semibold">BLR • HYD • NCR</div>
+            </div>
+            <div class="glass rounded-lg p-3 text-center">
+              <div class="text-[11px] text-slate-400">Momentum</div>
+              <div class="text-lg font-semibold text-emerald-300">Rising ↑</div>
+            </div>
+          </div>
+          <div class="mt-5 h-28 rounded-xl skeleton"></div>
+          <div class="mt-3 text-xs text-slate-400">Tip: Press <kbd class="px-1.5 py-0.5 bg-white/10 rounded">Space</kbd>
+            to pause/play the brand scroller anywhere.</div>
+        </div>
+        <div class="px-6 py-4 border-t border-white/10 flex items-center justify-end gap-3">
+          <button id="modalContinue"
+            class="focus-ring bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white font-medium py-2.5 px-5 rounded-xl">Continue</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+      // Populate dropdowns on page load
+      await populateDropdowns();
+    });
+
+    async function populateDropdowns() {
+      try {
+        // Populate Colleges
+        const collegesRes = await fetch('/api/colleges');
+        const colleges = await collegesRes.json();
+        const collegeSelect = document.getElementById('collegeName'); // Note: ID is collegeName here
+        colleges.forEach(college => {
+          const option = document.createElement('option');
+          option.value = college;
+          collegeSelect.appendChild(option);
+        });
+
+        // Populate Branches
+        const branchesRes = await fetch('/api/branches');
+        const branches = await branchesRes.json();
+        const branchSelect = document.getElementById('collegeBranch'); // Note: ID is collegeBranch here
+        branches.forEach(branch => {
+          const option = document.createElement('option');
+          option.value = branch;
+          branchSelect.appendChild(option);
+        });
+
+      } catch (error) {
+        console.error("Error populating dropdowns:", error);
+        // You might want to display a user-friendly error message on the landing page too.
+      }
+    }
+
+    document.getElementById('analyzeBtn').addEventListener('click', () => {
+      const collegeName = document.getElementById('collegeName').value;
+      const collegeBranch = document.getElementById('collegeBranch').value;
+
+      // Redirect to the analytics page with selected college and branch
+      const params = new URLSearchParams({ college: collegeName, branch: collegeBranch });
+      window.location.href = `/college-analytics?${params.toString()}`;
+    });
+
+    // Existing scripts for animations and other UI elements can remain as they are.
+    // -------- Year
+    document.getElementById('year').textContent = new Date().getFullYear();
+
+    // -------- Analyze button demo -> modal + toast (this will be overridden by the above analyzeBtn logic)
+    // You can remove this section if you want the button to directly redirect without the modal.
+    const analyzeBtnLanding = document.getElementById('analyzeBtn'); // Renamed to avoid conflict
+    const modal = document.getElementById('modal');
+    const closeModal = document.getElementById('closeModal');
+    const modalContinue = document.getElementById('modalContinue');
+    const toast = document.getElementById('toast');
+
+    function showToast(msg = 'Working on it…') {
+      toast.querySelector('span').textContent = msg;
+      toast.classList.remove('hidden');
+      setTimeout(() => toast.classList.add('hidden'), 2000);
+    }
+
+    analyzeBtnLanding?.addEventListener('click', () => {
+      // This part will now trigger the redirect logic above
+      // You might want to remove the modal/toast demo if it conflicts with the new flow
+    });
+    closeModal?.addEventListener('click', () => modal.classList.add('hidden'));
+    modalContinue?.addEventListener('click', () => {
+      modal.classList.add('hidden');
+      showToast('✅ Personalized view ready (demo)');
+    });
+
+    // -------- Scroller controls
+    const rows = Array.from(document.querySelectorAll('.animate-scroll'));
+    let baseDuration = 35; // seconds
+    function applyDuration() { rows.forEach(el => el.style.animationDuration = baseDuration + 's'); }
+    applyDuration();
+
+    document.getElementById('pauseScroll')?.addEventListener('click', () => rows.forEach(el => el.style.animationPlayState = 'paused'));
+    document.getElementById('playScroll')?.addEventListener('click', () => rows.forEach(el => el.style.animationPlayState = 'running'));
+    document.getElementById('fasterScroll')?.addEventListener('click', () => { baseDuration = Math.max(8, baseDuration - 5); applyDuration(); });
+    document.getElementById('slowerScroll')?.addEventListener('click', () => { baseDuration = Math.min(90, baseDuration + 5); applyDuration(); });
+
+    // Keyboard: Space toggles pause/play on scroller when focused anywhere
+    document.addEventListener('keydown', (e) => {
+      if (e.code === 'Space') {
+        e.preventDefault();
+        const paused = rows[0]?.style.animationPlayState === 'paused';
+        rows.forEach(el => el.style.animationPlayState = paused ? 'running' : 'paused');
+      }
+    });
+
+    // -------- Progress bar playful pulse
+    const progress = document.getElementById('progressBar');
+    let dir = 1; let w = 66;
+    setInterval(() => {
+      w += dir * (Math.random() * 4 + 1);
+      if (w > 92) { dir = -1 } if (w < 40) { dir = 1 }
+      progress.style.width = w + '%';
+    }, 1400);
+
+    // -------- Skill chips interactivity
+    const chips = document.querySelectorAll('.skill-chip');
+    const risingSkill = document.getElementById('risingSkill');
+    const avgCtc = document.getElementById('avgCtc');
+    const momentum = document.getElementById('momentum');
+
+    const mock = {
+      'Data Science': { rising: 'MLOps', ctc: '18-26', momentum: 'High ↑' },
+      'Frontend': { rising: 'React + RSC', ctc: '10-18', momentum: 'Medium ↗' },
+      'Cloud': { rising: 'Kubernetes', ctc: '14-22', momentum: 'High ↑' },
+      'DevOps': { rising: 'Platform Eng', ctc: '15-24', momentum: 'High ↑' },
+      'AI/ML': { rising: 'LLM Apps', ctc: '20-32', momentum: 'Very High ⤴' },
+    };
+
+    const selected = new Set();
+    function updateMini() {
+      const pick = [...selected][0] || 'AI/ML';
+      const d = mock[pick];
+      risingSkill.textContent = d.rising;
+      avgCtc.textContent = d.ctc + ' LPA';
+      momentum.textContent = d.momentum;
+    }
+    updateMini();
+
+    chips.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const skill = btn.dataset.skill;
+        if (selected.has(skill)) { selected.delete(skill); btn.classList.remove('ring-2', 'ring-white/70'); }
+        else { selected.add(skill); btn.classList.add('ring-2', 'ring-white/70'); }
+        updateMini();
+      });
+    });
+
+    // Quick Start selects two chips
+    document.getElementById('quickStart')?.addEventListener('click', () => {
+      selected.clear();
+      ['AI/ML', 'Cloud'].forEach(s => { selected.add(s);[...chips].find(c => c.dataset.skill === s)?.classList.add('ring-2', 'ring-white/70'); });
+      updateMini();
+      showToast('🚀 Quick start applied');
+    });
+
+    // 15s tour (fun highlight)
+    document.getElementById('tourBtn')?.addEventListener('click', () => {
+      showToast('🎯 Tip: Use Space to pause logos • Click Glow to toggle accents');
+    });
+
+    // -------- Parallax tilt for hero card (vanilla)
+    const hero = document.querySelector('.tilt');
+    hero?.addEventListener('mousemove', (e) => {
+      const rect = hero.getBoundingClientRect();
+      const x = e.clientX - rect.left; const y = e.clientY - rect.top;
+      const rx = (y / rect.height - 0.5) * -6; // tilt X
+      const ry = (x / rect.width - 0.5) * 6;  // tilt Y
+      hero.style.transform = `rotateX(${rx}deg) rotateY(${ry}deg)`;
+    });
+    hero?.addEventListener('mouseleave', () => { hero.style.transform = 'rotateX(0deg) rotateY(0deg)'; });
+
+    // -------- Accent glow toggle
+    const themeToggle = document.getElementById('themeToggle');
+    let glowOn = true;
+    themeToggle?.addEventListener('click', () => {
+      glowOn = !glowOn;
+      document.querySelectorAll('.glow-pulse').forEach(el => el.classList.toggle('glow-pulse'));
+      showToast(glowOn ? '🌟 Glow on' : '🌙 Glow off');
+    });
+
+    document.getElementById('analyticsLink').addEventListener('click', () => {
+      window.location.href = '/college-analytics';
+    });
+  </script>
+</body>
+
+</html>
